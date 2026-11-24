@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %} — Manage Orders{% endblock %}
+{% block head %}<meta http-equiv="refresh" content="20">{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🧾 Orders</h1>
+  <span class="badge badge-info fs-sm" style="padding:6px 14px;">Auto-refreshes every 20s</span>
+</div>
+
+<!-- Filters -->
+<div class="card mb-md" style="padding:14px 18px;">
+  <form class="form-inline" method="get">
+    <div class="form-group mb-0">
+      <input name="token" value="{{ q }}" placeholder="🔍 Search token..." style="min-width:180px;">
+    </div>
+    <div class="form-group mb-0">
+      <select name="status">
+        <option value="">All statuses</option>
+        {% for s in statuses + ['Cancelled'] %}
+        <option {{ 'selected' if s == st }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group mb-0">
+      <input type="date" name="date" value="{{ date_filter }}">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    <a href="/admin/orders" class="btn btn-secondary btn-sm">Clear</a>
+  </form>
+</div>
+
+<!-- Orders table -->
+<div class="card mb-0">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Token</th><th>Student</th><th>Items</th>
+          <th>Slot</th><th>Total</th><th>Payment</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td>
+            <a href="/order/{{ o.id }}" class="font-mono fw-bold fs-sm" style="color:var(--primary);">{{ o.token }}</a>
+          </td>
+          <td>
+            <div class="fw-semi fs-sm">{{ o.uname }}</div>
+            <div class="fs-xs text-muted">{{ o.college_id }}</div>
+          </td>
+          <td class="fs-xs text-muted" style="max-width:160px;">{{ items.get(o.id, [])|join(', ') or '—' }}</td>
+          <td class="fs-sm fw-semi">{{ o.pickup_slot }}</td>
+          <td class="fw-bold">₹{{ '%.0f'|format(o.total) }}</td>
+          <td>
+            <div class="fs-xs text-muted">{{ o.payment_method }}</div>
+            <span class="badge badge-{{ o.payment_status }}">{{ o.payment_status }}</span>
+          </td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.status }}</span></td>
+          <td>
+            {% if o.status != 'Cancelled' %}
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <form class="d-flex gap-sm align-center" method="post" action="/admin/orders/{{ o.id }}/status">
+                <select name="status" style="padding:5px 8px;font-size:0.78rem;width:auto;">
+                  {% for s in statuses %}<option {{ 'selected' if s == o.status }}>{{ s }}</option>{% endfor %}
+                </select>
+                <button class="btn btn-primary btn-sm">Set</button>
+              </form>
+              {% if o.status == 'Placed' %}
+              <form method="post" action="/admin/orders/{{ o.id }}/cancel" onsubmit="return confirm('Cancel & refund?')">
+                <button class="btn btn-danger btn-sm">✕ Cancel</button>
+              </form>
+              {% endif %}
+            </div>
+            {% else %}
+            <span class="text-muted fs-xs">Cancelled</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr class="empty-row">
+          <td colspan="8"><div style="padding:36px;text-align:center;"><span style="font-size:2.5rem;">📭</span><p class="text-muted mt-sm">No orders found.</p></div></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

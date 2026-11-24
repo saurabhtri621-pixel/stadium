@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %} — My Profile{% endblock %}
+{% block content %}
+
+<!-- Profile header -->
+<div class="card mb-md">
+  <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+    <div class="profile-avatar">{{ u.name[0].upper() }}</div>
+    <div style="flex:1;">
+      <h2 style="margin-bottom:4px;">{{ u.name }}</h2>
+      <div class="d-flex flex-wrap gap-sm">
+        <span class="badge badge-info">{{ u.college_id }}</span>
+        <span class="fs-sm text-muted">{{ u.email }}</span>
+        {% if u.phone %}<span class="fs-sm text-muted">📞 {{ u.phone }}</span>{% endif %}
+      </div>
+      {% if u.bio %}<p class="fs-sm text-muted mt-sm">{{ u.bio }}</p>{% endif %}
+    </div>
+    <div class="d-flex align-center gap-sm">
+      <span class="badge badge-primary" style="font-size:0.82rem;padding:6px 14px;">
+        🎓 Student Member
+      </span>
+      <a href="/logout" class="btn btn-danger btn-sm">🚪 Sign Out</a>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid" style="margin-bottom:20px;">
+  <div class="stat-card" style="--stat-color:#FF6B35;--stat-bg:#FFF3EE;">
+    <div class="stat-icon">📦</div>
+    <div class="stat-value">{{ stats.c }}</div>
+    <div class="stat-label">Total Orders</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#06D6A0;--stat-bg:#ECFDF5;">
+    <div class="stat-icon">💰</div>
+    <div class="stat-value">₹{{ '%.0f'|format(stats.t) }}</div>
+    <div class="stat-label">Total Spent</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#EF476F;--stat-bg:#FEF2F5;">
+    <div class="stat-icon">❤️</div>
+    <div class="stat-value">{{ fav_count }}</div>
+    <div class="stat-label">Favorites</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#8338EC;--stat-bg:#F5F3FF;">
+    <div class="stat-icon">🏷️</div>
+    <div class="stat-value">₹{{ '%.0f'|format(stats.d) }}</div>
+    <div class="stat-label">Saved via Coupons</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+  <!-- Edit profile -->
+  <div>
+    <div class="card">
+      <h3>✏️ Edit Profile</h3>
+      <form method="post">
+        <input type="hidden" name="action" value="update">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input name="name" value="{{ u.name }}" required>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input name="phone" value="{{ u.phone or '' }}" placeholder="+91 XXXXX XXXXX">
+        </div>
+        <div class="form-group">
+          <label>Bio / About</label>
+          <textarea name="bio" placeholder="A little about yourself..." maxlength="200">{{ u.bio or '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>🔒 Change Password</h3>
+      <form method="post">
+        <input type="hidden" name="action" value="password">
+        <div class="form-group">
+          <label>Current Password</label>
+          <input type="password" name="old_password" required>
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" name="new_password" minlength="6" required placeholder="Minimum 6 characters">
+        </div>
+        <button type="submit" class="btn btn-secondary">Update Password</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right column: top items + recent orders -->
+  <div>
+    {% if top_items %}
+    <div class="card">
+      <h3>🍽️ Your Favorite Orders</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        {% set max_qty = top_items[0].qty %}
+        {% for it in top_items %}
+        <div>
+          <div class="d-flex justify-between fs-sm mb-sm">
+            <span class="fw-semi">{{ it.name }}</span>
+            <span class="text-muted">× {{ it.qty }}</span>
+          </div>
+          <div style="height:5px;background:var(--border);border-radius:100px;">
+            <div style="height:5px;border-radius:100px;background:var(--primary);width:{{ ((it.qty / max_qty * 100)|int) }}%;"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header">
+        <h3 class="mb-0">🕐 Recent Orders</h3>
+        <a href="/orders" class="btn btn-secondary btn-sm">View all</a>
+      </div>
+      {% for o in recent %}
+      <div class="d-flex align-center justify-between" style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <div class="fs-sm font-mono fw-bold" style="color:var(--primary);">{{ o.token }}</div>
+          <div class="fs-xs text-muted">{{ o.order_date }} · ₹{{ '%.0f'|format(o.total) }}</div>
+        </div>
+        <div class="d-flex align-center gap-sm">
+          <span class="badge badge-{{ o.status }}">{{ o.status }}</span>
+          <a href="/order/{{ o.id }}" class="btn btn-secondary btn-sm">View</a>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-muted fs-sm text-center" style="padding:20px;">No orders yet. <a href="/menu">Order now!</a></p>
+      {% endfor %}
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <a href="/favorites" class="btn btn-secondary btn-sm flex-1 justify-center">❤️ View Favorites</a>
+      <a href="/wallet" class="btn btn-secondary btn-sm flex-1 justify-center">💳 My Wallet</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %} — Edit Item{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>✏️ Edit Menu Item</h1>
+  <a href="/admin/menu" class="btn btn-secondary btn-sm">← Back to Menu</a>
+</div>
+<div class="card" style="max-width:520px;">
+  <form method="post">
+    <div class="form-group">
+      <label>Item Name</label>
+      <input name="name" value="{{ it.name }}" required>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label>Category</label>
+        <select name="category">
+          {% for c in ['Snacks','Meals','Beverages','Desserts'] %}
+          <option {{ 'selected' if c == it.category }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Price (₹)</label>
+        <input name="price" type="number" step="0.5" min="0" value="{{ it.price }}" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Stock Quantity</label>
+      <input name="stock" type="number" min="0" value="{{ it.stock }}" required>
+      <div class="form-hint">Setting to 0 will mark the item as unavailable.</div>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea name="description" rows="2">{{ it.description or '' }}</textarea>
+    </div>
+    <div class="form-group d-flex align-center gap-sm">
+      <input type="checkbox" name="veg" id="veg-check" {{ 'checked' if it.veg }} style="width:auto;">
+      <label for="veg-check" style="text-transform:none;letter-spacing:0;font-size:0.93rem;color:var(--text);cursor:pointer;margin:0;">
+        🥦 Vegetarian item
+      </label>
+    </div>
+    <div class="d-flex gap-sm">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="/admin/menu" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

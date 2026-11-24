@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %} — Favorites{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>❤️ My Favorites</h1>
+  <a href="/menu" class="btn btn-secondary btn-sm">← Back to Menu</a>
+</div>
+{% if items %}
+<p class="text-muted mb-md">{{ items|length }} saved item{{ 's' if items|length != 1 }}</p>
+<div class="menu-grid">
+  {% for i in items %}
+  <div class="menu-card">
+    <div class="menu-card-title">
+      <span class="veg-dot {{ 'veg' if i.veg else 'nonveg' }}"></span>
+      {{ i.name }}
+    </div>
+    <div class="menu-card-desc">{{ i.description or '—' }}</div>
+    {% if i.avg_rating %}
+    <div class="menu-card-rating">⭐ {{ i.avg_rating }} ({{ i.n_rating }} review{{ 's' if i.n_rating != 1 }})</div>
+    {% endif %}
+    <div class="menu-card-price">₹{{ '%.0f'|format(i.price) }}</div>
+    <div class="menu-card-footer">
+      {% if not i.available or i.stock <= 0 %}
+        <span class="badge badge-danger">Out of stock</span>
+      {% else %}
+        <a class="btn btn-primary btn-sm" href="/cart/add/{{ i.id }}">+ Add to Cart</a>
+      {% endif %}
+      <a href="/menu/favorite/{{ i.id }}" class="fav-btn" title="Remove from favorites">❤️</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card text-center" style="padding:60px 20px;">
+  <div style="font-size:4rem;margin-bottom:14px;">🤍</div>
+  <h2>No favorites yet</h2>
+  <p class="text-muted mb-md">Tap the 🤍 heart on any menu item to save it here.</p>
+  <a href="/menu" class="btn btn-primary btn-lg">Browse Menu →</a>
+</div>
+{% endif %}
+{% endblock %}

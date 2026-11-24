@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %} — Coupons{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🏷️ Coupons &amp; Offers</h1>
+</div>
+
+<!-- Create coupon -->
+<div class="card">
+  <h3>➕ Create New Coupon</h3>
+  <form method="post">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:flex-end;">
+      <div class="form-group mb-0">
+        <label>Coupon Code</label>
+        <input name="code" placeholder="e.g. FEST2024" required style="text-transform:uppercase;">
+      </div>
+      <div class="form-group mb-0">
+        <label>Discount %</label>
+        <input name="percent" type="number" min="1" max="100" placeholder="10" required>
+      </div>
+      <div class="form-group mb-0">
+        <label>Min. Order (₹)</label>
+        <input name="min_order" type="number" min="0" value="0" placeholder="0">
+      </div>
+      <button type="submit" class="btn btn-primary">Create</button>
+    </div>
+    <div class="form-hint mt-sm">Min. Order = 0 means no minimum. Max discount = 100%.</div>
+  </form>
+</div>
+
+<!-- Coupons table -->
+<div class="card mb-0">
+  <div class="card-header">
+    <h3 class="mb-0">All Coupons</h3>
+    <span class="badge badge-primary">{{ coupons|length }} coupons</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Code</th><th>Discount</th><th>Min. Order</th><th>Times Used</th><th>Status</th><th>Created</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for c in coupons %}
+        <tr>
+          <td class="font-mono fw-bold fs-sm" style="color:var(--primary);letter-spacing:1px;">{{ c.code }}</td>
+          <td><span class="badge badge-primary">{{ c.percent }}% OFF</span></td>
+          <td class="fs-sm text-muted">{% if c.min_order %}₹{{ '%.0f'|format(c.min_order) }}+{% else %}No minimum{% endif %}</td>
+          <td class="fw-semi text-center">{{ c.uses }}</td>
+          <td>{% if c.active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge">Inactive</span>{% endif %}</td>
+          <td class="fs-xs text-muted">{{ c.created_at[:10] if c.created_at else '—' }}</td>
+          <td>
+            <div class="d-flex gap-sm">
+              <form method="post" action="/admin/coupons/toggle/{{ c.id }}">
+                <button class="btn btn-secondary btn-sm">{{ 'Disable' if c.active else 'Enable' }}</button>
+              </form>
+              <form method="post" action="/admin/coupons/delete/{{ c.id }}" onsubmit="return confirm('Delete coupon {{ c.code }}?')">
+                <button class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr class="empty-row"><td colspan="7"><p>No coupons yet. Create one above!</p></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

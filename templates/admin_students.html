@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %} — Students{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>👨‍🎓 Students</h1>
+  <span class="badge badge-info fs-sm" style="padding:7px 14px;">{{ students|length }} registered</span>
+</div>
+
+<!-- Search -->
+<div class="card mb-md" style="padding:14px 18px;">
+  <form class="form-inline" method="get">
+    <div class="form-group mb-0 flex-1">
+      <input name="q" value="{{ q }}" placeholder="🔍 Search by name, ID or email...">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+    {% if q %}<a href="/admin/students" class="btn btn-secondary btn-sm">Clear</a>{% endif %}
+  </form>
+</div>
+
+<div class="card mb-0">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Student</th><th>College ID</th><th>Email</th><th>Orders</th><th>Total Spent</th><th>Wallet</th><th>Add Credit</th></tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td>
+            <div class="d-flex align-center gap-sm">
+              <div style="width:32px;height:32px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0;">
+                {{ s.name[0].upper() }}
+              </div>
+              <span class="fw-semi fs-sm">{{ s.name }}</span>
+            </div>
+          </td>
+          <td class="font-mono fs-sm text-muted">{{ s.college_id }}</td>
+          <td class="fs-xs text-muted">{{ s.email }}</td>
+          <td class="text-center fw-bold">{{ s.n }}</td>
+          <td class="fw-bold" style="color:var(--primary);">₹{{ '%.0f'|format(s.spent) }}</td>
+          <td class="fw-semi {{ 'text-success' if s.wallet > 0 else 'text-muted' }}">₹{{ '%.0f'|format(s.wallet) }}</td>
+          <td>
+            <form class="d-flex gap-sm align-center" method="post" action="/admin/students/{{ s.id }}/credit">
+              <input name="amount" type="number" min="1" max="5000" value="100" style="width:72px;padding:5px 7px;font-size:0.78rem;">
+              <button class="btn btn-success btn-sm">+ Add</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr class="empty-row"><td colspan="7"><p>No students found.</p></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

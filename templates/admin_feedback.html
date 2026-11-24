@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %} — Feedback{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>⭐ Student Feedback</h1>
+</div>
+
+<!-- Filter by item -->
+<div class="card mb-md" style="padding:14px 18px;">
+  <form class="form-inline" method="get">
+    <div class="form-group mb-0">
+      <select name="item">
+        <option value="">All items</option>
+        {% for m in menu_items_list %}
+        <option value="{{ m.id }}" {{ 'selected' if item_filter|string == m.id|string }}>{{ m.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    {% if item_filter %}<a href="/admin/feedback" class="btn btn-secondary btn-sm">Clear</a>{% endif %}
+  </form>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+  <!-- Average ratings by item -->
+  <div class="card">
+    <h3>📊 Average Ratings by Item</h3>
+    {% if avgs %}
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Item</th><th>Rating</th><th>Reviews</th><th>% Positive</th></tr></thead>
+        <tbody>
+          {% for a in avgs %}
+          <tr>
+            <td class="fw-semi fs-sm">{{ a.name }}</td>
+            <td>
+              <div class="d-flex align-center gap-sm">
+                <span style="color:#FBBF24;">{{ '★' * (a.a|round|int) }}{{ '☆' * (5 - a.a|round|int) }}</span>
+                <span class="fw-bold">{{ a.a }}</span>
+              </div>
+            </td>
+            <td class="text-muted">{{ a.n }}</td>
+            <td>
+              {% set pct = ((a.positive / a.n * 100)|int) if a.n else 0 %}
+              <span class="{{ 'text-success' if pct >= 70 else 'text-danger' }} fw-semi">{{ pct }}%</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted fs-sm text-center" style="padding:30px;">No ratings yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Recent reviews -->
+  <div class="card">
+    <h3>💬 Recent Reviews</h3>
+    {% if rows %}
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      {% for r in rows[:15] %}
+      <div style="padding-bottom:14px;border-bottom:1px solid var(--border);">
+        <div class="d-flex justify-between align-center mb-sm">
+          <span class="fw-semi fs-sm">{{ r.iname }}</span>
+          <span style="color:#FBBF24;font-size:1rem;">{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</span>
+        </div>
+        {% if r.comment %}<p class="fs-sm text-muted" style="font-style:italic;">"{{ r.comment }}"</p>{% endif %}
+        <div class="fs-xs text-muted">{{ r.uname }} · {{ r.created_at[:10] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted fs-sm text-center" style="padding:30px;">No reviews yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %} — Menu{% endblock %}
+{% block content %}
+
+<!-- Search + Filter -->
+<div class="card mb-md" style="padding:16px;">
+  <form class="form-inline" method="get">
+    <div class="form-group mb-0 flex-1" style="min-width:180px;">
+      <input name="q" value="{{ q }}" placeholder="🔍  Search food, description...">
+    </div>
+    <div class="form-group mb-0">
+      <select name="cat">
+        <option value="">All categories</option>
+        {% for c in categories %}
+        <option value="{{ c }}" {{ 'selected' if c == cat }}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group mb-0 d-flex align-center gap-sm" style="white-space:nowrap;">
+      <input type="checkbox" name="veg" value="1" id="veg-cb" {{ 'checked' if veg }}>
+      <label for="veg-cb" style="text-transform:none;letter-spacing:0;font-size:0.88rem;font-weight:600;cursor:pointer;color:var(--text);margin:0;">🥦 Veg only</label>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    {% if q or cat or veg %}
+    <a href="/menu" class="btn btn-secondary btn-sm">✕ Reset</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Queue info -->
+<div class="d-flex align-center justify-between mb-md flex-wrap gap-sm">
+  <div class="d-flex align-center gap-sm flex-wrap">
+    {% if queue >= 8 %}
+    <span class="queue-pill high">🔴 Rush hour — ~{{ wait }} min wait</span>
+    {% elif queue >= 4 %}
+    <span class="queue-pill medium">🟡 Getting busy — ~{{ wait }} min wait</span>
+    {% else %}
+    <span class="queue-pill low">🟢 Quiet — ~{{ wait }} min wait</span>
+    {% endif %}
+    <span class="fs-sm text-muted">{{ queue }} order(s) in queue right now</span>
+  </div>
+  <a href="/cart" class="btn btn-secondary btn-sm">🛒 View Cart</a>
+</div>
+
+{% macro menu_card(i) %}
+<div class="menu-card">
+  <div class="menu-card-title">
+    <span class="veg-dot {{ 'veg' if i.veg else 'nonveg' }}"></span>
+    {{ i.name }}
+  </div>
+  <div class="menu-card-desc">{{ i.description or '—' }}</div>
+  {% if i.avg_rating %}
+  <div class="menu-card-rating">⭐ {{ i.avg_rating }} <span class="text-muted">({{ i.n_rating }} review{{ 's' if i.n_rating != 1 }})</span></div>
+  {% endif %}
+  <div class="menu-card-price">₹{{ '%.0f'|format(i.price) }}</div>
+  <div class="menu-card-footer">
+    {% if not i.available or i.stock <= 0 %}
+      <span class="badge badge-danger">Out of stock</span>
+    {% else %}
+      {% if i.stock <= 10 %}
+      <span class="low-stock-label">Only {{ i.stock }} left!</span>
+      {% else %}
+      <span></span>
+      {% endif %}
+      <a class="btn btn-primary btn-sm" href="/cart/add/{{ i.id }}">+ Add</a>
+    {% endif %}
+    <a href="/menu/favorite/{{ i.id }}" class="fav-btn" title="{{ 'Remove from favorites' if i.id in fav_ids else 'Save to favorites' }}">
+      {{ '❤️' if i.id in fav_ids else '🤍' }}
+    </a>
+  </div>
+</div>
+{% endmacro %}
+
+{% if fav and not (q or cat or veg) %}
+<div class="section-label">⭐ Your Favorites</div>
+<div class="menu-grid">{% for i in fav %}{{ menu_card(i) }}{% endfor %}</div>
+{% endif %}
+
+{% if popular and not (q or cat or veg) %}
+<div class="section-label">🔥 Popular Today</div>
+<div class="menu-grid">{% for i in popular %}{{ menu_card(i) }}{% endfor %}</div>
+{% endif %}
+
+{% for cat_name, cat_items in cats.items() %}
+<div class="section-label">
+  {% if cat_name == 'Snacks' %}🥨{% elif cat_name == 'Meals' %}🍱{% elif cat_name == 'Beverages' %}☕{% elif cat_name == 'Desserts' %}🍨{% else %}🍽️{% endif %}
+  {{ cat_name }}
+</div>
+<div class="menu-grid">{% for i in cat_items %}{{ menu_card(i) }}{% endfor %}</div>
+{% else %}
+<div class="card text-center" style="padding:48px;">
+  <div style="font-size:3rem;margin-bottom:12px;">🔍</div>
+  <h3>No items found</h3>
+  <p class="text-muted">Try a different search or category filter.</p>
+  <a href="/menu" class="btn btn-secondary mt-sm">Clear filters</a>
+</div>
+{% endfor %}
+{% endblock %}

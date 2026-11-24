@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %} — Your Cart{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🛒 Your Cart</h1>
+  <a href="/menu" class="btn btn-secondary btn-sm">← Continue Shopping</a>
+</div>
+
+{% if rows %}
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;flex-wrap:wrap;">
+  <!-- Left: items + options -->
+  <div>
+    <!-- Cart items -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="mb-0">Order Items</h3>
+        <span class="badge badge-primary">{{ rows|length }} item{{ 's' if rows|length != 1 }}</span>
+      </div>
+      {% for r in rows %}
+      <div class="cart-row">
+        <div>
+          <div class="d-flex align-center gap-sm">
+            <span class="veg-dot {{ 'veg' if r.veg else 'nonveg' }}"></span>
+            <span class="fw-semi">{{ r.name }}</span>
+          </div>
+          <div class="fs-sm text-muted mt-sm">₹{{ '%.0f'|format(r.price) }} each</div>
+        </div>
+        <div class="qty-controls">
+          <a href="/cart/dec/{{ r.id }}" class="qty-btn">−</a>
+          <span class="fw-bold" style="min-width:24px;text-align:center;">{{ r.qty }}</span>
+          <a href="/cart/add/{{ r.id }}" class="qty-btn">+</a>
+        </div>
+        <div class="fw-bold">₹{{ '%.0f'|format(r.sub) }}</div>
+        <a href="/cart/remove/{{ r.id }}" class="btn btn-danger btn-sm" title="Remove">✕</a>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Coupon -->
+    <div class="card">
+      <h3>🏷️ Promo Code</h3>
+      {% if code %}
+      <div class="info-box success">
+        ✅ Coupon <strong>{{ code }}</strong> applied — saving ₹{{ '%.0f'|format(disc) }}!
+        <a href="/cart/coupon/clear" class="ms-auto btn btn-secondary btn-sm">Remove</a>
+      </div>
+      {% else %}
+      <form class="form-inline" method="post" action="/cart/coupon">
+        <div class="form-group mb-0 flex-1">
+          <input name="code" placeholder="Enter coupon code (try WELCOME10)" style="text-transform:uppercase;">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+      </form>
+      <div class="form-hint mt-sm">Available: WELCOME10 (10% off), FEST15 (15% off on ₹50+), COLLEGE20 (20% off on ₹100+)</div>
+      {% endif %}
+    </div>
+
+    <!-- Pickup slot -->
+    <div class="card">
+      <h3>🕐 Pickup Time Slot</h3>
+      <p class="fs-sm text-muted mb-sm">Maximum {{ cap }} orders per slot. Choose your preferred pickup time.</p>
+      <div class="slot-grid">
+        {% for s, n in slots %}
+        <div class="{{ 'slot-full' if n >= cap else '' }}">
+          <input class="slot-option" type="radio" name="slot" id="slot_{{ loop.index }}" value="{{ s }}" form="checkout-form" {{ 'disabled' if n >= cap }} required>
+          <label class="slot-label" for="slot_{{ loop.index }}">
+            <div class="slot-time">{{ s }}</div>
+            <div class="slot-count">{{ 'FULL' if n >= cap else n|string + '/' + cap|string }}</div>
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Payment -->
+    <div class="card">
+      <h3>💳 Payment Method</h3>
+      <div class="payment-grid">
+        <div>
+          <input class="pay-option" type="radio" name="payment" id="pay-cash" value="Cash" form="checkout-form" checked>
+          <label class="pay-label" for="pay-cash">
+            <span class="pay-icon">💵</span>
+            <div class="pay-name">Cash</div>
+            <div class="pay-desc">Pay at counter</div>
+          </label>
+        </div>
+        <div>
+          <input class="pay-option" type="radio" name="payment" id="pay-upi" value="UPI" form="checkout-form">
+          <label class="pay-label" for="pay-upi">
+            <span class="pay-icon">📱</span>
+            <div class="pay-name">UPI</div>
+            <div class="pay-desc">Simulated UPI</div>
+          </label>
+        </div>
+        <div>
+          <input class="pay-option" type="radio" name="payment" id="pay-wallet" value="Wallet" form="checkout-form">
+          <label class="pay-label" for="pay-wallet">
+            <span class="pay-icon">👛</span>
+            <div class="pay-name">Wallet</div>
+            <div class="pay-desc">₹{{ '%.0f'|format(wallet_bal) }} available</div>
+          </label>
+        </div>
+      </div>
+      <div id="upi-field" style="display:none;" class="form-group mb-0">
+        <label>UPI ID</label>
+        <input name="upi_id" placeholder="yourname@upi" form="checkout-form">
+      </div>
+      <div class="form-group mb-0 mt-sm">
+        <label>Special Instructions (optional)</label>
+        <input name="notes" placeholder="e.g. less spice, extra napkins..." maxlength="200" form="checkout-form">
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: order summary -->
+  <div>
+    <div class="card" style="position:sticky;top:80px;">
+      <h3>Order Summary</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        <div class="d-flex justify-between fs-sm">
+          <span class="text-muted">Subtotal ({{ rows|length }} items)</span>
+          <span class="fw-semi">₹{{ '%.0f'|format(sub) }}</span>
+        </div>
+        {% if disc %}
+        <div class="d-flex justify-between fs-sm text-success">
+          <span>Coupon discount ({{ code }})</span>
+          <span class="fw-bold">− ₹{{ '%.0f'|format(disc) }}</span>
+        </div>
+        {% endif %}
+        <div class="d-flex justify-between fs-sm text-muted">
+          <span>Delivery</span><span>FREE 🎉</span>
+        </div>
+        <div style="border-top:2px solid var(--border);padding-top:10px;" class="d-flex justify-between">
+          <span class="fw-bold">Total</span>
+          <span class="fw-bold" style="font-size:1.3rem;color:var(--primary);">₹{{ '%.0f'|format(total) }}</span>
+        </div>
+      </div>
+      <form id="checkout-form" method="post" action="/checkout">
+        <button type="submit" class="btn btn-primary btn-lg btn-block">Place Order — ₹{{ '%.0f'|format(total) }} →</button>
+      </form>
+      <p class="fs-xs text-muted text-center mt-sm">By placing your order you agree to our canteen policies.</p>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<div class="card text-center" style="padding:60px 20px;">
+  <div style="font-size:4rem;margin-bottom:14px;">🛒</div>
+  <h2>Your cart is empty</h2>
+  <p class="text-muted mb-md">Add some delicious food from the menu!</p>
+  <a href="/menu" class="btn btn-primary btn-lg">Browse Menu →</a>
+</div>
+{% endif %}
+
+<script>
+// Show/hide UPI field
+document.querySelectorAll('.pay-option').forEach(r => {
+  r.addEventListener('change', () => {
+    document.getElementById('upi-field').style.display = r.value === 'UPI' ? 'block' : 'none';
+  });
+});
+</script>
+{% endblock %}

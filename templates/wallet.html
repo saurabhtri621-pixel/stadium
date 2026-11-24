@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %} — My Wallet{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>💳 My Wallet</h1>
+</div>
+
+<!-- Balance card -->
+<div class="wallet-card">
+  <div class="wallet-label">Available Balance</div>
+  <div class="wallet-amount">₹{{ '%.0f'|format(u.wallet) }}</div>
+  <div class="wallet-label">{{ u.name }} · {{ u.college_id }}</div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card" style="--stat-color:#FF6B35;--stat-bg:#FFF3EE;">
+    <div class="stat-icon">📦</div>
+    <div class="stat-value">{{ stats.c }}</div>
+    <div class="stat-label">Total Orders</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#06D6A0;--stat-bg:#ECFDF5;">
+    <div class="stat-icon">💰</div>
+    <div class="stat-value">₹{{ '%.0f'|format(stats.t) }}</div>
+    <div class="stat-label">Total Spent</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#8338EC;--stat-bg:#F5F3FF;">
+    <div class="stat-icon">🏷️</div>
+    <div class="stat-value">₹{{ '%.0f'|format(stats.d) }}</div>
+    <div class="stat-label">Saved on Discounts</div>
+  </div>
+  {% if stats.c %}
+  <div class="stat-card" style="--stat-color:#118AB2;--stat-bg:#EFF6FF;">
+    <div class="stat-icon">📊</div>
+    <div class="stat-value">₹{{ '%.0f'|format(stats.t / stats.c) }}</div>
+    <div class="stat-label">Avg Order Value</div>
+  </div>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+  <!-- Add money -->
+  <div class="card">
+    <h3>➕ Add Money (UPI)</h3>
+    <p class="fs-sm text-muted mb-md">Top up your wallet instantly. Minimum ₹10, maximum ₹5,000.</p>
+    <form method="post">
+      <div class="form-group">
+        <label>Amount (₹)</label>
+        <input type="number" name="amount" min="10" max="5000" value="200" step="10">
+      </div>
+      <div class="form-group">
+        <label>UPI ID</label>
+        <input name="upi_id" placeholder="yourname@upi" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Add Money →</button>
+    </form>
+  </div>
+
+  <!-- Monthly spending -->
+  <div class="card">
+    <h3>📈 Monthly Spending</h3>
+    {% if monthly %}
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      {% set max_spent = monthly|map(attribute='spent')|max %}
+      {% for m in monthly %}
+      <div>
+        <div class="d-flex justify-between fs-sm mb-sm">
+          <span class="fw-semi">{{ m.month }}</span>
+          <span class="fw-bold text-primary">₹{{ '%.0f'|format(m.spent) }}</span>
+        </div>
+        <div class="progress-bar" style="height:6px;background:var(--border);border-radius:100px;">
+          <div style="height:6px;border-radius:100px;background:var(--primary);width:{{ ((m.spent / max_spent * 100)|int if max_spent > 0 else 0) }}%;transition:width 0.6s ease;"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted fs-sm">No spending data yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Transaction history -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="mb-0">📋 Transaction History</h3>
+    <span class="badge badge-primary">Last 30</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Date &amp; Time</th><th>Description</th><th style="text-align:right;">Amount</th></tr></thead>
+      <tbody>
+        {% for t in txns %}
+        <tr>
+          <td class="fs-sm text-muted">{{ t.created_at }}</td>
+          <td class="fs-sm">{{ t.note }}</td>
+          <td style="text-align:right;" class="fw-bold {{ 'text-success' if t.amount > 0 else 'text-danger' }}">
+            {{ '+' if t.amount > 0 else '' }}₹{{ '%.0f'|format(t.amount|abs) }}
+          </td>
+        </tr>
+        {% else %}
+        <tr class="empty-row"><td colspan="3"><div style="padding:30px;text-align:center;"><span style="font-size:2rem;">💸</span><p class="text-muted mt-sm">No transactions yet. Add money to get started!</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

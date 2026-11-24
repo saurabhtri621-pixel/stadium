@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %} — Order {{ o.token }}{% endblock %}
+{% block head %}{% if o.status in ['Placed','Preparing','Ready'] %}<meta http-equiv="refresh" content="12">{% endif %}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="fs-sm text-muted mb-sm">Order Details</div>
+    <h1 style="margin-bottom:0;">{{ o.token }}</h1>
+  </div>
+  <a href="/orders" class="btn btn-secondary btn-sm">← All Orders</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+  <!-- Left column -->
+  <div>
+    <!-- QR + Token -->
+    {% if o.status != 'Cancelled' %}
+    <div class="card text-center">
+      <div class="qr-wrapper">
+        <img src="{{ qr }}" width="160" alt="QR Code">
+        <p class="fs-sm text-muted mt-sm">Show this QR at the counter</p>
+      </div>
+      <div class="token-display">{{ o.token }}</div>
+      <p class="fs-sm text-muted">Pickup slot: <strong>{{ o.pickup_slot }}</strong></p>
+    </div>
+    {% endif %}
+
+    <!-- Status steps -->
+    <div class="card">
+      {% if o.status == 'Cancelled' %}
+      <div class="d-flex align-center gap-sm mb-sm">
+        <span class="badge badge-Cancelled" style="font-size:0.85rem;padding:6px 14px;">✕ Cancelled</span>
+        <span class="badge badge-{{ o.payment_status }}">{{ o.payment_status }}</span>
+      </div>
+      {% else %}
+      {% set idx = statuses.index(o.status) if o.status in statuses else -1 %}
+      <div class="status-steps">
+        {% for s in statuses %}
+        {% set li = loop.index0 %}
+        {% if li > 0 %}
+        <div class="status-connector {{ 'done' if li <= idx }}"></div>
+        {% endif %}
+        <div class="status-step {{ 'done' if li < idx }} {{ 'current' if li == idx }}">
+          <div class="status-step-circle">
+            {% if li == 0 %}📋{% elif li == 1 %}👨‍🍳{% elif li == 2 %}✅{% else %}🎉{% endif %}
+          </div>
+          <div class="status-step-label">{{ s }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% if o.status in ['Placed', 'Preparing'] %}
+      <div class="info-box info mt-sm">
+        ⏱️ <span><strong>{{ ahead }}</strong> order(s) ahead of you · Estimated wait: <strong>~{{ wait }} min</strong></span>
+      </div>
+      {% elif o.status == 'Ready' %}
+      <div class="info-box success mt-sm">
+        🔔 <strong>Your order is READY!</strong> Please collect it from the counter now.
+      </div>
+      {% elif o.status == 'Collected' %}
+      <div class="info-box success mt-sm">
+        ✅ Order collected successfully. Enjoy your meal!
+      </div>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    <!-- Order items -->
+    <div class="card">
+      <h3>🧾 Items Ordered</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+          <tbody>
+            {% for i in items %}
+            <tr>
+              <td class="fw-semi">{{ i.name }}</td>
+              <td>{{ i.qty }}</td>
+              <td class="text-muted">₹{{ '%.0f'|format(i.price) }}</td>
+              <td class="fw-bold">₹{{ '%.0f'|format(i.price * i.qty) }}</td>
+            </tr>
+            {% endfor %}
+            {% if o.discount %}
+            <tr>
+              <td colspan="3" class="text-muted fs-sm">Coupon Discount ({{ o.coupon }})</td>
+              <td class="text-success fw-bold">− ₹{{ '%.0f'|format(o.discount) }}</td>
+            </tr>
+            {% endif %}
+            <tr style="border-top:2px solid var(--border);">
+              <td colspan="3" class="fw-bold">Total Paid</td>
+              <td class="fw-bold" style="font-size:1.1rem;color:var(--primary);">₹{{ '%.0f'|format(o.total) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {% if o.notes %}
+      <div class="info-box info mt-sm fs-sm">📝 <span><strong>Your note:</strong> {{ o.notes }}</span></div>
+      {% endif %}
+      <div class="d-flex gap-sm mt-md noprint">
+        <button onclick="window.print()" class="btn btn-secondary btn-sm">🖨️ Print Receipt</button>
+        {% if o.status == 'Placed' and session.role != 'admin' %}
+        <form method="post" action="/order/{{ o.id }}/cancel" onsubmit="return confirm('Cancel this order?')">
+          <button class="btn btn-danger btn-sm">✕ Cancel Order</button>
+        </form>
+        {% endif %}
+        {% if o.status not in ['Cancelled'] %}
+        <a href="/reorder/{{ o.id }}" class="btn btn-primary btn-sm ms-auto">🔄 Reorder</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Rating form -->
+    {% if o.status == 'Collected' and session.role != 'admin' %}
+    <div class="card noprint">
+      <h3>⭐ Rate Your Food</h3>
+      <p class="fs-sm text-muted mb-md">Your feedback helps us improve and helps other students choose!</p>
+      <form method="post" action="/order/{{ o.id }}/rate">
+        {% for i in items %}
+        <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border);">
+          <p class="fw-semi mb-sm">{{ i.name }}</p>
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            {% for n in [1,2,3,4,5] %}
+            <label style="cursor:pointer;font-size:1.6rem;transition:transform 0.1s;" title="{{ n }} star{{ 's' if n > 1 }}">
+              <input type="radio" name="r{{ i.item_id }}" value="{{ n }}" style="display:none;"
+                     {{ 'checked' if rated.get(i.item_id) and rated[i.item_id].rating == n }}>
+              <span class="star-emoji" data-val="{{ n }}" data-id="{{ i.item_id }}"
+                    style="color:{{ '#FBBF24' if rated.get(i.item_id) and rated[i.item_id].rating >= n else '#D1D5DB' }};">★</span>
+            </label>
+            {% endfor %}
+          </div>
+          <input name="c{{ i.item_id }}" placeholder="Leave a comment (optional)"
+                 value="{{ rated[i.item_id].comment if rated.get(i.item_id) else '' }}">
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Submit Feedback ⭐</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right column: order info -->
+  <div>
+    <div class="card" style="position:sticky;top:80px;">
+      <h3>Order Info</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <div class="fs-xs text-muted">Status</div>
+          <span class="badge badge-{{ o.status }}" style="margin-top:4px;font-size:0.82rem;padding:5px 12px;">{{ o.status }}</span>
+        </div>
+        <div>
+          <div class="fs-xs text-muted">Payment</div>
+          <div class="d-flex align-center gap-sm mt-sm">
+            <span class="fw-semi fs-sm">{{ o.payment_method }}</span>
+            <span class="badge badge-{{ o.payment_status }}">{{ o.payment_status }}</span>
+          </div>
+        </div>
+        <div>
+          <div class="fs-xs text-muted">Pickup Slot</div>
+          <div class="fw-bold mt-sm">{{ o.pickup_slot }}</div>
+        </div>
+        <div>
+          <div class="fs-xs text-muted">Ordered At</div>
+          <div class="fs-sm mt-sm">{{ o.created_at }}</div>
+        </div>
+        <div>
+          <div class="fs-xs text-muted">Total Amount</div>
+          <div style="font-size:1.5rem;font-weight:800;color:var(--primary);margin-top:4px;">₹{{ '%.0f'|format(o.total) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Star rating interaction
+document.querySelectorAll('.star-emoji').forEach(star => {
+  star.addEventListener('click', function() {
+    const id = this.dataset.id;
+    const val = parseInt(this.dataset.val);
+    document.querySelectorAll(`[data-id="${id}"]`).forEach((s, i) => {
+      s.style.color = (i < val) ? '#FBBF24' : '#D1D5DB';
+    });
+    // Check the radio
+    const radio = document.querySelector(`input[name="r${id}"][value="${val}"]`);
+    if (radio) radio.checked = true;
+  });
+  star.style.cursor = 'pointer';
+  star.style.transition = 'transform 0.1s';
+  star.addEventListener('mouseenter', function() { this.style.transform = 'scale(1.3)'; });
+  star.addEventListener('mouseleave', function() { this.style.transform = 'scale(1)'; });
+});
+</script>
+{% endblock %}

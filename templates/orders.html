@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %} — My Orders{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📦 My Orders</h1>
+  <a href="/menu" class="btn btn-primary btn-sm">+ New Order</a>
+</div>
+
+<!-- Status filter tabs -->
+<div class="d-flex gap-sm flex-wrap mb-md">
+  <a href="/orders" class="btn btn-sm {{ 'btn-primary' if not status_filter else 'btn-secondary' }}">All</a>
+  {% for s in statuses %}
+  <a href="/orders?status={{ s }}" class="btn btn-sm {{ 'btn-primary' if status_filter == s else 'btn-secondary' }}">{{
+    s }}</a>
+  {% endfor %}
+</div>
+
+{% if orders %}
+<div class="card mb-0">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Token</th>
+          <th>Date</th>
+          <th>Slot</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Payment</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td class="font-mono fw-bold" style="color:var(--primary);">{{ o.token }}</td>
+          <td class="fs-sm text-muted">{{ o.order_date }}</td>
+          <td class="fs-sm">{{ o.pickup_slot }}</td>
+          <td class="fs-sm text-muted">—</td>
+          <td class="fw-bold">₹{{ '%.0f'|format(o.total) }}</td>
+          <td>
+            <span class="badge badge-{{ o.payment_status }}">{{ o.payment_status }}</span>
+          </td>
+          <td>
+            <span class="badge badge-{{ o.status }}">{{ o.status }}</span>
+          </td>
+          <td>
+            <div class="d-flex gap-sm">
+              <a href="/order/{{ o.id }}" class="btn btn-secondary btn-sm">View</a>
+              {% if o.status not in ['Cancelled'] %}
+              <a href="/reorder/{{ o.id }}" class="btn btn-primary btn-sm">Reorder</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card text-center" style="padding:60px 20px;">
+  <div style="font-size:4rem;margin-bottom:14px;">📦</div>
+  <h2>No orders yet</h2>
+  <p class="text-muted mb-md">Your order history will appear here.</p>
+  <a href="/menu" class="btn btn-primary btn-lg">Start Ordering →</a>
+</div>
+{% endif %}
+{% endblock %}

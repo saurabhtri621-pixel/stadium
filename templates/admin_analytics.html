@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %} — Analytics{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📈 Sales Analytics</h1>
+  <a href="/admin/report" class="btn btn-secondary btn-sm">📋 Daily Report →</a>
+</div>
+
+<!-- Summary stats -->
+<div class="stats-grid">
+  <div class="stat-card" style="--stat-color:#FF6B35;--stat-bg:#FFF3EE;">
+    <div class="stat-icon">💰</div>
+    <div class="stat-value">₹{{ '%.0f'|format(total_revenue) }}</div>
+    <div class="stat-label">All-time Revenue</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#06D6A0;--stat-bg:#ECFDF5;">
+    <div class="stat-icon">📦</div>
+    <div class="stat-value">{{ total_orders }}</div>
+    <div class="stat-label">Total Orders</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#118AB2;--stat-bg:#EFF6FF;">
+    <div class="stat-icon">👨‍🎓</div>
+    <div class="stat-value">{{ total_students }}</div>
+    <div class="stat-label">Students</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#8338EC;--stat-bg:#F5F3FF;">
+    <div class="stat-icon">📊</div>
+    <div class="stat-value">{% if total_orders %}₹{{ '%.0f'|format(total_revenue / total_orders) }}{% else %}—{% endif %}</div>
+    <div class="stat-label">Avg Order Value</div>
+  </div>
+</div>
+
+<!-- Charts grid -->
+<div class="charts-grid">
+  <div class="chart-card">
+    <h3>💰 Revenue — Last 14 Days</h3>
+    <canvas id="c1"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>📦 Orders — Last 14 Days</h3>
+    <canvas id="c2"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>🏆 Top Items by Quantity Sold</h3>
+    <canvas id="c3"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>⏰ Peak Ordering Hours</h3>
+    <canvas id="c4"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>💳 Payment Methods</h3>
+    <canvas id="c5"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>🗂️ Revenue by Category</h3>
+    <canvas id="c6"></canvas>
+  </div>
+</div>
+
+{% if data.rated_names %}
+<div class="chart-card" style="margin-bottom:16px;">
+  <h3>⭐ Top Rated Items</h3>
+  <canvas id="c7" height="80"></canvas>
+</div>
+{% endif %}
+
+<p class="fs-xs text-muted text-center">Charts require internet connection (Chart.js loaded from CDN).</p>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const d = {{ data|tojson }};
+const pal = ['#FF6B35','#06D6A0','#118AB2','#FFD166','#8338EC','#EF476F','#2EC4B6','#E9C46A'];
+
+function mkChart(id, type, labels, datasets, opts) {
+  return new Chart(document.getElementById(id), {
+    type, data: { labels, datasets },
+    options: { responsive: true, plugins: { legend: { display: datasets.length > 1 } },
+                ...opts }
+  });
+}
+
+mkChart('c1', 'line', d.days.map(x=>x.slice(5)), [{
+  label: 'Revenue (₹)', data: d.revenue,
+  borderColor: '#FF6B35', backgroundColor: 'rgba(255,107,53,0.1)',
+  fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 4
+}], { scales: { y: { beginAtZero: true } } });
+
+mkChart('c2', 'bar', d.days.map(x=>x.slice(5)), [{
+  label: 'Orders', data: d.orders_count,
+  backgroundColor: 'rgba(6,214,160,0.8)', borderColor: '#06D6A0',
+  borderWidth: 2, borderRadius: 5
+}], { scales: { y: { beginAtZero: true } } });
+
+mkChart('c3', 'bar', d.top_names, [{
+  label: 'Qty Sold', data: d.top_qty,
+  backgroundColor: pal, borderRadius: 5
+}], { indexAxis: 'y', plugins: { legend: { display: false } },
+     scales: { x: { beginAtZero: true } } });
+
+mkChart('c4', 'bar', d.hours, [{
+  label: 'Orders', data: d.hour_counts,
+  backgroundColor: 'rgba(17,138,178,0.8)', borderColor: '#118AB2',
+  borderWidth: 2, borderRadius: 5
+}], { scales: { y: { beginAtZero: true } } });
+
+mkChart('c5', 'doughnut', d.pay_names, [{
+  data: d.pay_counts, backgroundColor: pal,
+  borderWidth: 2, borderColor: '#fff'
+}], { plugins: { legend: { position: 'right' } } });
+
+mkChart('c6', 'doughnut', d.cat_names, [{
+  data: d.cat_rev, backgroundColor: pal.slice(2),
+  borderWidth: 2, borderColor: '#fff'
+}], { plugins: { legend: { position: 'right' } } });
+
+{% if data.rated_names %}
+mkChart('c7', 'bar', d.rated_names, [{
+  label: 'Avg Rating', data: d.rated_avg,
+  backgroundColor: 'rgba(255,209,102,0.85)', borderColor: '#FFD166',
+  borderWidth: 2, borderRadius: 5
+}], { indexAxis: 'y', scales: { x: { min: 0, max: 5, beginAtZero: true } },
+     plugins: { legend: { display: false } } });
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %} — Announcements{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📢 Announcements</h1>
+</div>
+
+<!-- Create -->
+<div class="card">
+  <h3>➕ Post New Announcement</h3>
+  <form method="post">
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label>Title</label>
+        <input name="title" placeholder="e.g. Special menu today!" required>
+      </div>
+      <div class="form-group">
+        <label>Type / Color</label>
+        <select name="type">
+          <option value="info">ℹ️ Info (Blue)</option>
+          <option value="success">✅ Success (Green)</option>
+          <option value="warning">⚠️ Warning (Yellow)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Content / Message</label>
+      <textarea name="content" placeholder="Announcement details..." required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Post Announcement</button>
+  </form>
+</div>
+
+<!-- Preview of active announcements -->
+{% set active_count = announcements|selectattr('active')|list|length %}
+{% if active_count %}
+<div class="info-box info">
+  ℹ️ <span>{{ active_count }} announcement{{ 's' if active_count != 1 }} currently visible to all students.</span>
+</div>
+{% endif %}
+
+<!-- All announcements table -->
+<div class="card mb-0">
+  <div class="card-header">
+    <h3 class="mb-0">All Announcements</h3>
+    <span class="badge badge-primary">{{ announcements|length }}</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Type</th><th>Title</th><th>Content</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for a in announcements %}
+        <tr>
+          <td>
+            <span class="badge badge-{{ 'success' if a.type == 'success' else 'info' if a.type == 'info' else 'warning' }}">
+              {% if a.type == 'success' %}✅{% elif a.type == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+              {{ a.type|capitalize }}
+            </span>
+          </td>
+          <td class="fw-semi fs-sm">{{ a.title }}</td>
+          <td class="fs-sm text-muted" style="max-width:280px;">{{ a.content[:100] + '...' if a.content|length > 100 else a.content }}</td>
+          <td>{% if a.active %}<span class="badge badge-success">Visible</span>{% else %}<span class="badge">Hidden</span>{% endif %}</td>
+          <td class="fs-xs text-muted">{{ a.created_at[:10] }}</td>
+          <td>
+            <div class="d-flex gap-sm">
+              <form method="post" action="/admin/announcements/{{ a.id }}/toggle">
+                <button class="btn btn-secondary btn-sm">{{ 'Hide' if a.active else 'Show' }}</button>
+              </form>
+              <form method="post" action="/admin/announcements/{{ a.id }}/delete" onsubmit="return confirm('Delete this announcement?')">
+                <button class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr class="empty-row"><td colspan="6"><p>No announcements yet. Create one above!</p></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

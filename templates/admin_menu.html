@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %} — Manage Menu{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🍽️ Manage Menu</h1>
+</div>
+
+<!-- Add item form -->
+<div class="card">
+  <h3>➕ Add New Item</h3>
+  <form method="post">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div class="form-group mb-0">
+        <label>Item Name</label>
+        <input name="name" placeholder="e.g. Paneer Roll" required>
+      </div>
+      <div class="form-group mb-0">
+        <label>Category</label>
+        <select name="category">
+          {% for c in categories %}<option>{{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group mb-0">
+        <label>Price (₹)</label>
+        <input name="price" type="number" step="0.5" min="0" placeholder="0" required>
+      </div>
+      <div class="form-group mb-0">
+        <label>Stock</label>
+        <input name="stock" type="number" min="0" value="30">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr auto;gap:12px;align-items:flex-end;">
+      <div class="form-group mb-0">
+        <label>Description</label>
+        <input name="description" placeholder="Short description of the item...">
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;padding-bottom:2px;">
+        <label style="display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:0.88rem;color:var(--text);cursor:pointer;">
+          <input type="checkbox" name="veg" checked> Veg
+        </label>
+        <button type="submit" class="btn btn-primary">Add Item</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Menu items table -->
+<div class="card mb-0">
+  <div class="card-header">
+    <h3 class="mb-0">All Menu Items</h3>
+    <span class="badge badge-primary">{{ items|length }} items</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for i in items %}
+        <tr>
+          <td>
+            <div class="d-flex align-center gap-sm">
+              <span class="veg-dot {{ 'veg' if i.veg else 'nonveg' }}"></span>
+              <div>
+                <div class="fw-semi fs-sm">{{ i.name }}</div>
+                <div class="fs-xs text-muted">{{ i.description[:50] + '...' if i.description|length > 50 else i.description }}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge badge-info">{{ i.category }}</span></td>
+          <td class="fw-bold" style="color:var(--primary);">₹{{ '%.0f'|format(i.price) }}</td>
+          <td class="{{ 'text-danger fw-bold' if i.stock <= low else '' }}">
+            {{ i.stock }}
+            {% if i.stock <= low %}<span class="fs-xs text-danger"> ⚠ Low</span>{% endif %}
+          </td>
+          <td>
+            {% if i.available %}<span class="badge badge-success">✓ Available</span>
+            {% else %}<span class="badge badge-danger">✕ Hidden</span>{% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-sm flex-wrap">
+              <form class="d-flex gap-sm align-center" method="post" action="/admin/menu/restock/{{ i.id }}">
+                <input type="number" name="add" value="10" min="1" style="width:58px;padding:5px 7px;font-size:0.78rem;">
+                <button class="btn btn-success btn-sm">+Stock</button>
+              </form>
+              <form method="post" action="/admin/menu/toggle/{{ i.id }}">
+                <button class="btn btn-secondary btn-sm" title="Toggle availability">
+                  {{ 'Hide' if i.available else 'Show' }}
+                </button>
+              </form>
+              <a href="/admin/menu/edit/{{ i.id }}" class="btn btn-primary btn-sm">Edit</a>
+              <form method="post" action="/admin/menu/delete/{{ i.id }}" onsubmit="return confirm('Delete {{ i.name }}?')">
+                <button class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

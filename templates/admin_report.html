@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %} — Sales Report{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📋 Sales Report</h1>
+  <div class="d-flex gap-sm noprint">
+    <a class="btn btn-success btn-sm" href="/admin/report.csv?date={{ day }}">⬇ Download CSV</a>
+    <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Print</button>
+  </div>
+</div>
+
+<!-- Date picker -->
+<div class="card mb-md noprint" style="padding:14px 18px;">
+  <form class="form-inline" method="get">
+    <div class="form-group mb-0">
+      <label>Date</label>
+      <input type="date" name="date" value="{{ day }}">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">View Report</button>
+  </form>
+</div>
+
+<h2 style="margin-bottom:16px;">📅 Report for {{ day }}</h2>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card" style="--stat-color:#FF6B35;--stat-bg:#FFF3EE;">
+    <div class="stat-icon">📦</div>
+    <div class="stat-value">{{ s.c }}</div>
+    <div class="stat-label">Total Orders</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#06D6A0;--stat-bg:#ECFDF5;">
+    <div class="stat-icon">💰</div>
+    <div class="stat-value">₹{{ '%.0f'|format(s.t) }}</div>
+    <div class="stat-label">Revenue</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#8338EC;--stat-bg:#F5F3FF;">
+    <div class="stat-icon">🏷️</div>
+    <div class="stat-value">₹{{ '%.0f'|format(s.d) }}</div>
+    <div class="stat-label">Discounts Given</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#EF476F;--stat-bg:#FEF2F5;">
+    <div class="stat-icon">✕</div>
+    <div class="stat-value">{{ cancelled }}</div>
+    <div class="stat-label">Cancelled</div>
+  </div>
+  {% if s.c %}
+  <div class="stat-card" style="--stat-color:#118AB2;--stat-bg:#EFF6FF;">
+    <div class="stat-icon">📊</div>
+    <div class="stat-value">₹{{ '%.0f'|format(s.t / s.c) }}</div>
+    <div class="stat-label">Avg Order Value</div>
+  </div>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+  <!-- Items sold -->
+  <div class="card">
+    <h3>🍽️ Items Sold</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Item</th><th style="text-align:center;">Qty Sold</th><th style="text-align:right;">Revenue</th></tr></thead>
+        <tbody>
+          {% for t in top %}
+          <tr>
+            <td class="fw-semi fs-sm">{{ t.name }}</td>
+            <td class="text-center fw-bold">{{ t.qty }}</td>
+            <td class="text-right fw-bold" style="color:var(--primary);">₹{{ '%.0f'|format(t.revenue) }}</td>
+          </tr>
+          {% else %}
+          <tr class="empty-row"><td colspan="3">No sales on this date.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <!-- Payment breakdown -->
+    <div class="card">
+      <h3>💳 Payment Methods</h3>
+      {% for p in pay_breakdown %}
+      <div class="d-flex justify-between align-center fs-sm" style="padding:7px 0;border-bottom:1px solid var(--border);">
+        <span class="fw-semi">{{ p.payment_method }}</span>
+        <div class="d-flex gap-sm align-center">
+          <span class="text-muted">×{{ p.c }}</span>
+          <span class="fw-bold text-primary">₹{{ '%.0f'|format(p.t) }}</span>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-muted fs-sm">No data.</p>
+      {% endfor %}
+    </div>
+
+    <!-- Hourly breakdown -->
+    {% if hourly %}
+    <div class="card">
+      <h3>⏰ Hourly Orders</h3>
+      {% for h in hourly %}
+      <div class="d-flex justify-between align-center fs-sm" style="padding:6px 0;border-bottom:1px solid var(--border);">
+        <span class="fw-semi">{{ h.h }}:00</span>
+        <div class="d-flex gap-sm align-center">
+          <span class="text-muted">{{ h.c }} order{{ 's' if h.c != 1 }}</span>
+          <span class="fw-bold text-primary">₹{{ '%.0f'|format(h.t) }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

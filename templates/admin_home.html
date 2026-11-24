@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %} — Admin Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📊 Dashboard</h1>
+  <div class="d-flex gap-sm">
+    <span class="badge badge-primary fs-sm" style="padding:7px 14px;">Today: {{ week_days[-1] }}</span>
+    <a href="/admin/orders" class="btn btn-primary btn-sm">🧾 Manage Orders</a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card" style="--stat-color:#FF6B35;--stat-bg:#FFF3EE;">
+    <div class="stat-icon">📦</div>
+    <div class="stat-value">{{ s.c }}</div>
+    <div class="stat-label">Orders Today</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#06D6A0;--stat-bg:#ECFDF5;">
+    <div class="stat-icon">💰</div>
+    <div class="stat-value">₹{{ '%.0f'|format(s.t) }}</div>
+    <div class="stat-label">Revenue Today</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#FFD166;--stat-bg:#FFFBEB;">
+    <div class="stat-icon">⏳</div>
+    <div class="stat-value">{{ pending }}</div>
+    <div class="stat-label">Pending Orders</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#118AB2;--stat-bg:#EFF6FF;">
+    <div class="stat-icon">👨‍🎓</div>
+    <div class="stat-value">{{ students }}</div>
+    <div class="stat-label">Total Students</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#8338EC;--stat-bg:#F5F3FF;">
+    <div class="stat-icon">⭐</div>
+    <div class="stat-value">{{ avg or '—' }}</div>
+    <div class="stat-label">Avg Rating</div>
+  </div>
+  <div class="stat-card" style="--stat-color:#EF476F;--stat-bg:#FEF2F5;">
+    <div class="stat-icon">🏷️</div>
+    <div class="stat-value">₹{{ '%.0f'|format(s.d) }}</div>
+    <div class="stat-label">Discounts Given</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+  <!-- Left: weekly revenue chart + recent orders -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="mb-0">📈 Revenue — Last 7 Days</h3>
+        <a href="/admin/analytics" class="btn btn-secondary btn-sm">Full Analytics</a>
+      </div>
+      <canvas id="weekChart" height="100"></canvas>
+    </div>
+
+    <!-- Recent orders -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="mb-0">🧾 Recent Orders</h3>
+        <a href="/admin/orders" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Token</th><th>Student</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for o in recent_orders %}
+            <tr>
+              <td class="font-mono fw-bold fs-sm" style="color:var(--primary);">{{ o.token }}</td>
+              <td class="fs-sm">{{ o.uname }}</td>
+              <td class="fw-semi">₹{{ '%.0f'|format(o.total) }}</td>
+              <td><span class="badge badge-{{ o.status }}">{{ o.status }}</span></td>
+              <td><a href="/order/{{ o.id }}" class="btn btn-secondary btn-sm">View</a></td>
+            </tr>
+            {% else %}
+            <tr class="empty-row"><td colspan="5">No orders yet today.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: low stock + category breakdown -->
+  <div>
+    {% if low %}
+    <div class="card" style="border-left:4px solid var(--danger);">
+      <div class="card-header">
+        <h3 class="mb-0">⚠️ Low Stock Alert</h3>
+        <span class="badge badge-danger">{{ low|length }}</span>
+      </div>
+      {% for i in low %}
+      <div class="d-flex align-center justify-between" style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <div class="fs-sm fw-semi">{{ i.name }}</div>
+          <div class="fs-xs" style="color:var(--danger);">Only {{ i.stock }} left</div>
+        </div>
+        <form class="d-flex gap-sm align-center" method="post" action="/admin/menu/restock/{{ i.id }}">
+          <input type="number" name="add" value="20" min="1" style="width:60px;padding:5px 8px;font-size:0.8rem;">
+          <button class="btn btn-success btn-sm">+Stock</button>
+        </form>
+      </div>
+      {% endfor %}
+      <a href="/admin/menu" class="btn btn-secondary btn-sm btn-block mt-sm">Manage All Items</a>
+    </div>
+    {% endif %}
+
+    {% if cat_stats %}
+    <div class="card">
+      <h3>📊 Category Sales Today</h3>
+      {% for c in cat_stats %}
+      <div class="d-flex justify-between align-center fs-sm" style="padding:7px 0;border-bottom:1px solid var(--border);">
+        <span class="fw-semi">{{ c.category }}</span>
+        <div class="d-flex gap-sm align-center">
+          <span class="text-muted">×{{ c.qty }}</span>
+          <span class="fw-bold text-primary">₹{{ '%.0f'|format(c.rev) }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Quick links -->
+    <div class="card">
+      <h3>⚡ Quick Actions</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <a href="/admin/orders" class="btn btn-primary btn-sm">🧾 Manage Orders</a>
+        <a href="/admin/menu" class="btn btn-secondary btn-sm">🍽️ Manage Menu</a>
+        <a href="/admin/report" class="btn btn-secondary btn-sm">📋 Today's Report</a>
+        <a href="/admin/announcements" class="btn btn-secondary btn-sm">📢 Post Announcement</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const days = {{ week_days|tojson }};
+const rev = {{ week_rev|tojson }};
+new Chart(document.getElementById('weekChart'), {
+  type: 'bar',
+  data: {
+    labels: days.map(d => d.slice(5)),
+    datasets: [{
+      label: 'Revenue (₹)',
+      data: rev,
+      backgroundColor: 'rgba(255,107,53,0.8)',
+      borderColor: '#FF6B35',
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, grid: { color: '#F0F2F5' } }, x: { grid: { display: false } } }
+  }
+});
+</script>
+{% endblock %}
